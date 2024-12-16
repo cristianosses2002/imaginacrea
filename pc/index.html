@@ -1,5 +1,4 @@
-<html lang="es">
-<head>
+<html lang="es"><head>
     <base href="https://example.com/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,7 +45,7 @@
         }
 
         /* Input Fields */
-        input {
+        input, select, textarea {
             padding: 15px;
             font-size: 16px;
             width: 100%;
@@ -58,7 +57,18 @@
             transition: border 0.3s ease-in-out, box-shadow 0.2s;
         }
 
-        input:focus {
+        textarea {
+            resize: none; /* Disables resizing completely */
+            line-height: 1.4; /* Add some height between lines in multiline */
+        }
+
+        textarea:focus {
+            outline: none;
+            border: 1px solid #007AFF;
+            box-shadow: 0 0 8px rgba(0, 122, 255, 0.3);
+        }
+
+        input:focus, select:focus {
             outline: none;
             border: 1px solid #007AFF;
             box-shadow: 0 0 8px rgba(0, 122, 255, 0.3);
@@ -87,6 +97,12 @@
         button:active {
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
         }
 
         /* Loading Message Styles */
@@ -128,6 +144,7 @@
         }
 
         .result-image-card {
+            position: relative;
             border: 1px solid #ddd;
             border-radius: 10px;
             padding: 10px;
@@ -155,6 +172,24 @@
             width: 48%;
         }
 
+        /* Selection Overlay */
+        .selected-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 122, 255, 0.5);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            pointer-events: none;
+        }
+
         /* Smooth Transitions */
         *, *::before, *::after {
             box-sizing: border-box;
@@ -165,18 +200,27 @@
 <body>
     <h1>Generador de Imágenes por Descripción</h1>
     <div id="main-container">
-        <input type="text" id="search-input" placeholder="Escribe tu tema (e.g., 'Un bosque con niebla')" />
-        <input type="number" id="image-count" min="1" max="5" value="1" placeholder="Cantidad de imágenes" />
+        <textarea id="search-input" placeholder="Escribe tu tema (e.g., 'Un bosque con niebla')" rows="3" style="height: auto;" oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';"></textarea>
+        <label for="image-count">Selecciona la cantidad de imágenes:</label>
+        <select id="image-count">
+            <option value="1" selected="">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
         <button id="generate-button">Generar Imágenes</button>
         <p id="loading-message">
             <span id="loading-icon"></span>
             Generando imágenes...
+        </p>
+        <p id="timer-message" style="display: none; font-size: 16px; color: #555; text-align: center; background: #F9FAFB; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+            ¡Espera <span id="timer" style="font-weight: bold; color: #007AFF;">60</span> segundos!
         </p>
         <div id="result-images"></div>
     </div>
 
     <script>
         const generateSeed = () => Math.floor(Math.random() * 99999);
+        let selectedImages = 0;
 
         async function query(data) {
             const response = await fetch(
@@ -205,6 +249,7 @@
         }
 
         document.getElementById("generate-button").addEventListener("click", async () => {
+            const generateButton = document.getElementById("generate-button");
             let searchInput = document.getElementById("search-input").value.trim();
             const imageCount = parseInt(document.getElementById("image-count").value);
             const resultsContainer = document.getElementById("result-images");
@@ -215,6 +260,26 @@
                 return;
             }
 
+            // Disable the button and show a timer message
+            generateButton.disabled = true;
+            document.getElementById("timer-message").style.display = "block";
+
+            let timer = 60;
+            const timerElement = document.getElementById("timer");
+            const interval = setInterval(() => {
+                timer -= 1;
+                timerElement.textContent = timer;
+                if (timer <= 0) {
+                    clearInterval(interval);
+                    document.getElementById("timer-message").style.display = "none";
+
+                    // Proceed with image generation
+                    generateImages(searchInput, imageCount, generateButton);
+                }
+            }, 1000);
+        });
+
+        async function generateImages(searchInput, imageCount, generateButton) {
             document.getElementById("loading-message").style.display = "block";
 
             // Translate input to English if in Spanish
@@ -222,10 +287,7 @@
 
             for (let i = 0; i < imageCount; i++) {
                 const seed = generateSeed();
-                const prompt = `
-                  ${translatedSearchInput.trim()}. Realistic details, vivid textures, dynamic lighting, and artistic composition.
-                  [Seed: ${seed}]
-                `;
+                const prompt = `${translatedSearchInput.trim()}. Realistic details, vivid textures, dynamic lighting, and artistic composition. [Seed: ${seed}]`;
 
                 try {
                     const responseBlob = await query({ inputs: prompt });
@@ -233,21 +295,23 @@
 
                     const imageCard = document.createElement("div");
                     imageCard.className = "result-image-card";
+
                     imageCard.innerHTML = `
-                        <img src="${imageUrl}" alt="Diseño generado">
+                        <img src="${imageUrl}" alt="Diseño generado" onclick="selectImage(this)">
                         <div class="action-buttons">
                             <button onclick="downloadImage('${imageUrl}', ${seed})">Descargar</button>
                             <button onclick="deleteImage(this)">Eliminar</button>
                         </div>
                     `;
-                    resultsContainer.appendChild(imageCard);
+                    document.getElementById("result-images").appendChild(imageCard);
                 } catch (error) {
                     console.error("Error al generar la imagen:", error);
                 }
             }
 
             document.getElementById("loading-message").style.display = "none";
-        });
+            generateButton.disabled = false;
+        }
 
         function downloadImage(url, seed) {
             const a = document.createElement('a');
@@ -258,8 +322,31 @@
 
         function deleteImage(button) {
             const imageCard = button.closest('.result-image-card');
+            if (imageCard.querySelector('.selected-image')) {
+                selectedImages--;
+            }
             imageCard.remove();
         }
+
+        function selectImage(imageElement) {
+            const imageCard = imageElement.closest('.result-image-card');
+            if (imageCard.querySelector('.selected-image')) {
+                // Deselect the image
+                imageCard.querySelector('.selected-image').remove();
+                selectedImages--;
+            } else {
+                if (selectedImages >= 3) {
+                    alert("Solo puedes seleccionar un máximo de 3 imágenes.");
+                    return;
+                }
+                // Select the image
+                const overlay = document.createElement('div');
+                overlay.className = 'selected-image';
+                overlay.textContent = '✓ Seleccionada';
+                imageCard.appendChild(overlay);
+                selectedImages++;
+            }
+        }
     </script>
-</body>
-</html>
+
+</body></html>
