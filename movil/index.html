@@ -1,0 +1,360 @@
+<html lang="es">
+<head>
+    <base href="https://example.com/">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Imágenes</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: "SF Pro Display", Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #F5F5F5, #FFFFFF);
+            color: #333;
+        }
+
+        h1 {
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            text-align: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* Container Styles */
+        #main-container {
+            width: 95%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #FFFFFF;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+        #main-container:hover {
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Input Fields */
+        input, textarea, select {
+            padding: 12px;
+            font-size: 14px;
+            width: 100%;
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: #F5F5F5;
+            transition: border 0.3s ease-in-out, box-shadow 0.2s;
+            resize: none; /* Prevent native resizing for better control */
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border: 1px solid #007AFF;
+            box-shadow: 0 0 5px rgba(0, 122, 255, 0.3);
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Button Styles */
+        button {
+            cursor: pointer;
+            font-size: 14px;
+            padding: 12px 16px;
+            color: #FFF;
+            background-color: #007AFF;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 100%;
+        }
+
+        button:hover {
+            background-color: #005BB5;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Loading and Timer Styles */
+        #loading-message {
+            display: none;
+            font-size: 14px;
+            color: #333;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #loading-icon {
+            display: inline-block;
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 122, 255, 0.5);
+            border-top: 3px solid #007AFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        #timer {
+            font-size: 18px;
+            color: #007AFF;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Result Images */
+        #result-images {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .result-image-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            background-color: #fff;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 100%;
+        }
+
+        .result-image-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            display: block;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .action-buttons button {
+            font-size: 12px;
+            padding: 10px;
+            flex: 1 1 auto;
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            #main-container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 18px;
+            }
+
+            button {
+                font-size: 13px;
+                padding: 10px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            h1 {
+                font-size: 16px;
+            }
+
+            button {
+                font-size: 12px;
+                padding: 8px;
+            }
+
+            input, textarea, select {
+                padding: 10px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Generador de Imágenes por Descripción</h1>
+    <div id="main-container">
+        <textarea id="search-input" placeholder="Escribe tu tema (e.g., 'Un bosque con niebla')" 
+                  aria-label="Introduce tu tema a buscar" rows="1"></textarea>
+        <select id="image-count" aria-label="Cantidad de imágenes a generar">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
+        <button id="generate-button" aria-label="Generar imágenes">Generar Imágenes</button>
+        <p id="loading-message">
+            <span id="loading-icon" aria-hidden="true"></span>
+            Generando imágenes...
+        </p>
+        <p id="timer"></p>
+        <div id="result-images" aria-live="polite"></div>
+    </div>
+
+    <script>
+        const generateSeed = () => Math.floor(Math.random() * 99999);
+
+        // Make the search input dynamically resize
+        const searchInput = document.getElementById("search-input");
+        searchInput.addEventListener("input", () => {
+            searchInput.style.height = "auto";
+            searchInput.style.height = searchInput.scrollHeight + "px";
+        });
+
+        async function query(data) {
+            const response = await fetch(
+                "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
+                {
+                    headers: {
+                        Authorization: "Bearer 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",
+                        "Content-Type": "application/json",
+                    },
+                    method: "POST",
+                    body: JSON.stringify(data),
+                }
+            );
+            const result = await response.blob();
+            return result;
+        }
+
+        async function translateToEnglish(text) {
+            const response = await fetch("https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-es-en", {
+                headers: { Authorization: "Bearer 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" },
+                method: "POST",
+                body: JSON.stringify({ inputs: text }),
+            });
+            const result = await response.json();
+            return result[0]?.translation_text || text;
+        }
+
+        document.getElementById("generate-button").addEventListener("click", async () => {
+            const searchInputValue = searchInput.value.trim();
+            let imageCount = parseInt(document.getElementById("image-count").value);
+            const resultsContainer = document.getElementById("result-images");
+            const timerElement = document.getElementById("timer");
+            const generateButton = document.getElementById("generate-button");
+
+            // Clear previous results and reset UI
+            resultsContainer.innerHTML = "";
+
+            if (!searchInputValue) {
+                alert("Por favor, introduce un tema para buscar.");
+                return;
+            }
+
+            let countdown = 60; // Countdown time in seconds
+            timerElement.style.display = "block";
+            timerElement.textContent = `Espera ${countdown} segundos...`;
+
+            // Disable the "Generar Imágenes" button
+            generateButton.disabled = true;
+            generateButton.style.backgroundColor = "#999";
+            generateButton.style.cursor = "not-allowed";
+
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                timerElement.textContent = `Espera ${countdown} segundos...`;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    timerElement.style.display = "none";
+
+                    // Re-enable the "Generar Imágenes" button
+                    generateButton.disabled = false;
+                    generateButton.style.backgroundColor = "#007AFF";
+                    generateButton.style.cursor = "pointer";
+
+                    // Call function to generate images after countdown
+                    generateImages(searchInputValue, imageCount, resultsContainer);
+                }
+            }, 1000);
+        });
+
+        async function generateImages(searchInputValue, imageCount, resultsContainer) {
+            document.getElementById("loading-message").style.display = "block";
+
+            const translatedSearchInput = await translateToEnglish(searchInputValue);
+
+            for (let i = 0; i < imageCount; i++) {
+                const seed = generateSeed();
+                const prompt = `
+                  ${translatedSearchInput.trim()}. Realistic details, vivid textures, dynamic lighting, and artistic composition.
+                  [Seed: ${seed}]
+                `;
+
+                try {
+                    const responseBlob = await query({ inputs: prompt });
+                    const imageUrl = URL.createObjectURL(responseBlob);
+
+                    const imageCard = document.createElement("div");
+                    imageCard.className = "result-image-card";
+                    imageCard.innerHTML = `
+                        <img src="${imageUrl}" alt="Diseño generado por la IA">
+                        <div class="action-buttons">
+                            <button onclick="downloadImage('${imageUrl}', ${seed})" aria-label="Descargar imagen">Descargar</button>
+                            <button onclick="deleteImage(this)" aria-label="Eliminar imagen">Eliminar</button>
+                        </div>
+                    `;
+                    resultsContainer.appendChild(imageCard);
+                } catch (error) {
+                    console.error("Error al generar la imagen:", error);
+                }
+            }
+
+            document.getElementById("loading-message").style.display = "none";
+        }
+
+        function downloadImage(url, seed) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `imagen_generada_${seed}.png`;
+            a.click();
+        }
+
+        function deleteImage(button) {
+            const imageCard = button.closest('.result-image-card');
+            imageCard.remove();
+        }
+    </script>
+</body>
+</html>
